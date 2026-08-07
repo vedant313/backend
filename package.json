@@ -1,0 +1,16 @@
+{
+  "name": "billbook-backend",
+  "version": "1.0.0",
+  "description": "BillBook backend API - stores business profile, invoices, estimates and payments in a local JSON database file.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "uuid": "^9.0.1"
+  }
+}
