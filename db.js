@@ -1,49 +1,66 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import { MongoClient } from "mongodb";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_FILE = path.join(__dirname, "data", "db.json");
-
-const DEFAULT_DATA = {
-  business: {
-    name: "My Business",
-    proprietor: "",
-    phone: "",
-    email: "",
-    address: "",
-    gstin: "",
-    state: "",
-    bankName: "",
-    accountHolder: "",
-    accountNo: "",
-    ifsc: "",
-    terms: "Thank you for your business.",
-    logoDataUrl: "",
-  },
-  documents: [], // invoices + estimates
-  payments: [],
+const DEFAULT_BUSINESS = {
+  name: "My Business",
+  proprietor: "",
+  phone: "",
+  email: "",
+  address: "",
+  gstin: "",
+  state: "",
+  bankName: "",
+  accountHolder: "",
+  accountNo: "",
+  ifsc: "",
+  terms: "Thank you for your business.",
+  logoDataUrl: "",
 };
 
-function ensureDb() {
-  const dir = path.dirname(DB_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  if (!fs.existsSync(DB_FILE)) {
-    fs.writeFileSync(DB_FILE, JSON.stringify(DEFAULT_DATA, null, 2));
+let client;
+let dbPromise;
+
+function getMongoUri() {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error(
+      "MONGODB_URI environment variable is not set. Add it in your hosting provider's environment variables (see README)."
+    );
   }
+  return uri;
 }
 
-export function readDb() {
-  ensureDb();
-  const raw = fs.readFileSync(DB_FILE, "utf-8");
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return DEFAULT_DATA;
+async function connect() {
+  if (!client) {
+    client = new MongoClient(getMongoUri());
+    await client.connect();
   }
+  // MongoDB Atlas connection strings usually don't include a database name,
+  // so we just use a fixed database name for this app.
+  return client.db("billbook");
 }
 
-export function writeDb(data) {
-  ensureDb();
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+export function getDb() {
+  if (!dbPromise) dbPromise = connect();
+  return dbPromise;
+}
+
+// Ensures a single business profile document exists and returns the collection.
+export async function getBusinessCollection() {
+  const db = await getDb();
+  const col = db.collection("business");
+  const existing = await col.findOne({ _key: "profile" });
+  if (!existing) {
+    await col.insertOne({ _key: "profile", ...DEFAULT_BUSINESS });
+  }
+  return col;
+}
+
+export async function getDocumentsCollection() {
+  const db = await getDb();
+  return db.collection("documents");
+}
+
+export async function getPaymentsCollection() {
+  const db = await getDb();
+  return db.collection("payments");
 }

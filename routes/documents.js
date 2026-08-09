@@ -1,52 +1,79 @@
 import { Router } from "express";
 import { v4 as uuid } from "uuid";
-import { readDb, writeDb } from "../db.js";
+import { getDocumentsCollection } from "../db.js";
 
 const router = Router();
 
 // GET /api/documents?type=invoice|estimate
-router.get("/", (req, res) => {
-  const db = readDb();
-  const { type } = req.query;
-  const docs = type ? db.documents.filter((d) => d.type === type) : db.documents;
-  res.json(docs);
+router.get("/", async (req, res) => {
+  try {
+    const col = await getDocumentsCollection();
+    const filter = req.query.type ? { type: req.query.type } : {};
+    const docs = await col.find(filter, { projection: { _id: 0 } }).toArray();
+    res.json(docs);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // GET one document
-router.get("/:id", (req, res) => {
-  const db = readDb();
-  const doc = db.documents.find((d) => d.id === req.params.id);
-  if (!doc) return res.status(404).json({ error: "Document not found" });
-  res.json(doc);
+router.get("/:id", async (req, res) => {
+  try {
+    const col = await getDocumentsCollection();
+    const doc = await col.findOne({ id: req.params.id }, { projection: { _id: 0 } });
+    if (!doc) return res.status(404).json({ error: "Document not found" });
+    res.json(doc);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // POST create a new invoice/estimate
-router.post("/", (req, res) => {
-  const db = readDb();
-  const doc = { id: uuid(), ...req.body };
-  db.documents.push(doc);
-  writeDb(db);
-  res.status(201).json(doc);
+router.post("/", async (req, res) => {
+  try {
+    const col = await getDocumentsCollection();
+    const doc = { id: uuid(), ...req.body };
+    await col.insertOne({ ...doc });
+    const { _id, ...clean } = doc;
+    res.status(201).json(clean);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // PUT update an existing invoice/estimate
-router.put("/:id", (req, res) => {
-  const db = readDb();
-  const idx = db.documents.findIndex((d) => d.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "Document not found" });
-  db.documents[idx] = { ...db.documents[idx], ...req.body, id: req.params.id };
-  writeDb(db);
-  res.json(db.documents[idx]);
+router.put("/:id", async (req, res) => {
+  try {
+    const col = await getDocumentsCollection();
+    const update = { ...req.body, id: req.params.id };
+    delete update._id;
+    const result = await col.findOneAndUpdate(
+      { id: req.params.id },
+      { $set: update },
+      { returnDocument: "after", projection: { _id: 0 } }
+    );
+    if (!result) return res.status(404).json({ error: "Document not found" });
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // DELETE an invoice/estimate
-router.delete("/:id", (req, res) => {
-  const db = readDb();
-  const before = db.documents.length;
-  db.documents = db.documents.filter((d) => d.id !== req.params.id);
-  if (db.documents.length === before) return res.status(404).json({ error: "Document not found" });
-  writeDb(db);
-  res.status(204).end();
+router.delete("/:id", async (req, res) => {
+  try {
+    const col = await getDocumentsCollection();
+    const result = await col.deleteOne({ id: req.params.id });
+    if (result.deletedCount === 0) return res.status(404).json({ error: "Document not found" });
+    res.status(204).end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 export default router;
