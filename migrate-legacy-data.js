@@ -9,7 +9,13 @@
 //   node migrate-legacy-data.js your-account-email@example.com
 
 import "dotenv/config";
+import dns from "node:dns";
 import { MongoClient } from "mongodb";
+
+// Some networks / ISPs don't resolve the special DNS "SRV" records that
+// mongodb+srv:// connection strings need. Forcing Node to ask Google's DNS
+// instead of the system default fixes "querySrv ECONNREFUSED" errors.
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
 async function main() {
   const email = process.argv[2];
