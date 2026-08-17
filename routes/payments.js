@@ -4,11 +4,11 @@ import { getPaymentsCollection } from "../db.js";
 
 const router = Router();
 
-// GET all payments
+// GET all payments (only this user's)
 router.get("/", async (req, res) => {
   try {
     const col = await getPaymentsCollection();
-    const payments = await col.find({}, { projection: { _id: 0 } }).toArray();
+    const payments = await col.find({ userId: req.userId }, { projection: { _id: 0 } }).toArray();
     res.json(payments);
   } catch (err) {
     console.error(err);
@@ -20,7 +20,7 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const col = await getPaymentsCollection();
-    const payment = { id: uuid(), ...req.body };
+    const payment = { id: uuid(), ...req.body, userId: req.userId };
     await col.insertOne({ ...payment });
     const { _id, ...clean } = payment;
     res.status(201).json(clean);
@@ -34,10 +34,10 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const col = await getPaymentsCollection();
-    const update = { ...req.body, id: req.params.id };
+    const update = { ...req.body, id: req.params.id, userId: req.userId };
     delete update._id;
     const result = await col.findOneAndUpdate(
-      { id: req.params.id },
+      { id: req.params.id, userId: req.userId },
       { $set: update },
       { returnDocument: "after", projection: { _id: 0 } }
     );
@@ -53,7 +53,7 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const col = await getPaymentsCollection();
-    const result = await col.deleteOne({ id: req.params.id });
+    const result = await col.deleteOne({ id: req.params.id, userId: req.userId });
     if (result.deletedCount === 0) return res.status(404).json({ error: "Payment not found" });
     res.status(204).end();
   } catch (err) {

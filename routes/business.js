@@ -3,11 +3,11 @@ import { getBusinessCollection } from "../db.js";
 
 const router = Router();
 
-// GET business profile
+// GET business profile (for the signed-in user)
 router.get("/", async (req, res) => {
   try {
-    const col = await getBusinessCollection();
-    const business = await col.findOne({ _key: "profile" }, { projection: { _id: 0, _key: 0 } });
+    const col = await getBusinessCollection(req.userId);
+    const business = await col.findOne({ userId: req.userId }, { projection: { _id: 0, userId: 0 } });
     res.json(business);
   } catch (err) {
     console.error(err);
@@ -15,15 +15,15 @@ router.get("/", async (req, res) => {
   }
 });
 
-// PUT (update) business profile
+// PUT (update) business profile (for the signed-in user)
 router.put("/", async (req, res) => {
   try {
-    const col = await getBusinessCollection();
+    const col = await getBusinessCollection(req.userId);
     const update = { ...req.body };
     delete update._id;
-    delete update._key;
-    await col.updateOne({ _key: "profile" }, { $set: update }, { upsert: true });
-    const business = await col.findOne({ _key: "profile" }, { projection: { _id: 0, _key: 0 } });
+    delete update.userId;
+    await col.updateOne({ userId: req.userId }, { $set: update }, { upsert: true });
+    const business = await col.findOne({ userId: req.userId }, { projection: { _id: 0, userId: 0 } });
     res.json(business);
   } catch (err) {
     console.error(err);

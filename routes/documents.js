@@ -4,11 +4,11 @@ import { getDocumentsCollection } from "../db.js";
 
 const router = Router();
 
-// GET /api/documents?type=invoice|estimate
+// GET /api/documents?type=invoice|estimate  (only this user's documents)
 router.get("/", async (req, res) => {
   try {
     const col = await getDocumentsCollection();
-    const filter = req.query.type ? { type: req.query.type } : {};
+    const filter = { userId: req.userId, ...(req.query.type ? { type: req.query.type } : {}) };
     const docs = await col.find(filter, { projection: { _id: 0 } }).toArray();
     res.json(docs);
   } catch (err) {
@@ -21,7 +21,7 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const col = await getDocumentsCollection();
-    const doc = await col.findOne({ id: req.params.id }, { projection: { _id: 0 } });
+    const doc = await col.findOne({ id: req.params.id, userId: req.userId }, { projection: { _id: 0 } });
     if (!doc) return res.status(404).json({ error: "Document not found" });
     res.json(doc);
   } catch (err) {
@@ -34,7 +34,7 @@ router.get("/:id", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const col = await getDocumentsCollection();
-    const doc = { id: uuid(), ...req.body };
+    const doc = { id: uuid(), ...req.body, userId: req.userId };
     await col.insertOne({ ...doc });
     const { _id, ...clean } = doc;
     res.status(201).json(clean);
@@ -48,10 +48,10 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const col = await getDocumentsCollection();
-    const update = { ...req.body, id: req.params.id };
+    const update = { ...req.body, id: req.params.id, userId: req.userId };
     delete update._id;
     const result = await col.findOneAndUpdate(
-      { id: req.params.id },
+      { id: req.params.id, userId: req.userId },
       { $set: update },
       { returnDocument: "after", projection: { _id: 0 } }
     );
@@ -67,7 +67,7 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const col = await getDocumentsCollection();
-    const result = await col.deleteOne({ id: req.params.id });
+    const result = await col.deleteOne({ id: req.params.id, userId: req.userId });
     if (result.deletedCount === 0) return res.status(404).json({ error: "Document not found" });
     res.status(204).end();
   } catch (err) {

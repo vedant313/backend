@@ -14,6 +14,9 @@ const DEFAULT_BUSINESS = {
   ifsc: "",
   terms: "Thank you for your business.",
   logoDataUrl: "",
+  // Theme: either a preset name (see frontend/src/utils/themes.js) or a custom
+  // set of colors the user picked in the theme builder.
+  theme: { preset: "ocean", custom: null },
 };
 
 let client;
@@ -44,13 +47,25 @@ export function getDb() {
   return dbPromise;
 }
 
-// Ensures a single business profile document exists and returns the collection.
-export async function getBusinessCollection() {
+// ---- Users (auth) ----
+export async function getUsersCollection() {
+  const db = await getDb();
+  const col = db.collection("users");
+  await col.createIndex({ email: 1 }, { unique: true }).catch(() => {});
+  return col;
+}
+
+// Every user gets their own business profile, invoices/estimates and
+// payments, scoped by userId, so multiple people can sign up and use the
+// same deployment without seeing each other's data.
+
+// Ensures a business profile document exists for this user and returns the collection.
+export async function getBusinessCollection(userId) {
   const db = await getDb();
   const col = db.collection("business");
-  const existing = await col.findOne({ _key: "profile" });
+  const existing = await col.findOne({ userId });
   if (!existing) {
-    await col.insertOne({ _key: "profile", ...DEFAULT_BUSINESS });
+    await col.insertOne({ userId, ...DEFAULT_BUSINESS });
   }
   return col;
 }
