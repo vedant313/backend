@@ -4,7 +4,7 @@ import { getDb } from "../db.js";
 
 const router = Router();
 
-const UPI_ID = "shamkantgopal@ybl";
+const UPI_ID = "nexsatechnologies@okaxis";
 const PLANS = {
   free: { id: "free", name: "Free", price: 0, durationDays: null },
   pro: { id: "pro", name: "Pro", price: 199, durationDays: 30 },
