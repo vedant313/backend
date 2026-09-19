@@ -72,10 +72,14 @@ export async function getBusinessCollection(userId) {
 
 export async function getDocumentsCollection() {
   const db = await getDb();
-  return db.collection("documents");
+  const col = db.collection("documents");
+  await col.createIndex({ userId: 1, type: 1, date: -1 }).catch(() => {});
+  return col;
 }
 
 export async function getPaymentsCollection() {
   const db = await getDb();
-  return db.collection("payments");
+  const col = db.collection("payments");
+  await col.createIndex({ userId: 1, date: -1 }).catch(() => {});
+  return col;
 }
