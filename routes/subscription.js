@@ -123,6 +123,22 @@ router.get("/payment-requests", async (req, res) => {
   }
 });
 
+// Admin-only queue of payment requests awaiting verification.
+router.get("/admin/payment-requests", async (req, res) => {
+  if (!adminAuthorized(req)) return res.status(403).json({ error: "Not authorized" });
+  try {
+    const { requests } = await getCollections();
+    const rows = await requests
+      .find({}, { projection: { _id: 0 } })
+      .sort({ createdAt: -1 })
+      .toArray();
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Could not load payment requests" });
+  }
+});
+
 // Admin verification endpoint. Never expose the admin key in frontend code.
 router.post("/verify", async (req, res) => {
   if (!adminAuthorized(req)) return res.status(403).json({ error: "Not authorized" });
