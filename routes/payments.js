@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { v4 as uuid } from "uuid";
 import { getPaymentsCollection } from "../db.js";
+import { enforcePaymentLimit } from "../middleware/subscription.js";
 
 const router = Router();
 
@@ -17,7 +18,7 @@ router.get("/", async (req, res) => {
 });
 
 // POST create a new payment
-router.post("/", async (req, res) => {
+router.post("/", enforcePaymentLimit, async (req, res) => {
   try {
     const col = await getPaymentsCollection();
     const payment = { id: uuid(), ...req.body, userId: req.userId };
