@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { v4 as uuid } from "uuid";
-import { getDb } from "../db.js";
+import { getExpensesCollection } from "../db.js";
 
 const router = Router();
-async function col(){ return (await getDb()).collection("expenses"); }
+async function col(){ return getExpensesCollection(); }
 
 router.get("/", async (req,res)=>{
   try{
