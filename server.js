@@ -9,6 +9,7 @@ import subscriptionRoutes from "./routes/subscription.js";
 import productRoutes from "./routes/products.js";
 import customerRoutes from "./routes/customers.js";
 import expenseRoutes from "./routes/expenses.js";
+import recurringRoutes from "./routes/recurring.js";
 import { requireAuth } from "./middleware/auth.js";
 
 const app = express();
@@ -29,6 +30,7 @@ app.use("/api/subscription", requireAuth, subscriptionRoutes);
 app.use("/api/products", requireAuth, productRoutes);
 app.use("/api/customers", requireAuth, customerRoutes);
 app.use("/api/expenses", requireAuth, expenseRoutes);
+app.use("/api/recurring", requireAuth, recurringRoutes);
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
