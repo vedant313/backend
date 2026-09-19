@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { v4 as uuid } from "uuid";
 import { getDocumentsCollection } from "../db.js";
+import { enforceDocumentLimit } from "../middleware/subscription.js";
 
 const router = Router();
 
@@ -31,7 +32,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST create a new invoice/estimate
-router.post("/", async (req, res) => {
+router.post("/", enforceDocumentLimit, async (req, res) => {
   try {
     const col = await getDocumentsCollection();
     const doc = { id: uuid(), ...req.body, userId: req.userId };
