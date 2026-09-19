@@ -57,7 +57,9 @@ router.get("/status", async (req, res) => {
   try {
     const { subscriptions } = await getCollections();
     const doc = await subscriptions.findOne({ userId: req.userId });
-    res.json(currentSubscription(doc));
+    const { getAccessState, FREE_LIMITS } = await import("../middleware/subscription.js");
+    const access = await getAccessState(req.userId);
+    res.json({ ...currentSubscription(doc), mode: access.mode, trialEndsAt: access.trialEndsAt, freeLimits: FREE_LIMITS });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Could not load subscription status" });
