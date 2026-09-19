@@ -6,6 +6,8 @@ import businessRoutes from "./routes/business.js";
 import documentsRoutes from "./routes/documents.js";
 import paymentsRoutes from "./routes/payments.js";
 import subscriptionRoutes from "./routes/subscription.js";
+import productRoutes from "./routes/products.js";
+import customerRoutes from "./routes/customers.js";
 import { requireAuth } from "./middleware/auth.js";
 
 const app = express();
@@ -23,6 +25,8 @@ app.use("/api/business", requireAuth, businessRoutes);
 app.use("/api/documents", requireAuth, documentsRoutes);
 app.use("/api/payments", requireAuth, paymentsRoutes);
 app.use("/api/subscription", requireAuth, subscriptionRoutes);
+app.use("/api/products", requireAuth, productRoutes);
+app.use("/api/customers", requireAuth, customerRoutes);
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
