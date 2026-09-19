@@ -29,6 +29,7 @@ router.post("/signup", async (req, res) => {
       email: email.toLowerCase().trim(),
       passwordHash,
       createdAt: new Date().toISOString(),
+      trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
     };
     await col.insertOne(user);
 
