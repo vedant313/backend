@@ -83,3 +83,11 @@ export async function getPaymentsCollection() {
   await col.createIndex({ userId: 1, date: -1 }).catch(() => {});
   return col;
 }
+
+export async function getExpensesCollection() {
+  const db = await getDb();
+  const col = db.collection("expenses");
+  await col.createIndex({ userId: 1, date: -1 }).catch(() => {});
+  await col.createIndex({ userId: 1, category: 1 }).catch(() => {});
+  return col;
+}
