@@ -1,0 +1,10 @@
+import { Router } from "express";
+import { v4 as uuid } from "uuid";
+import { getDb } from "../db.js";
+const router=Router();
+async function col(){return (await getDb()).collection("recurringInvoices");}
+router.get("/",async(req,res)=>{try{res.json(await (await col()).find({userId:req.userId},{projection:{_id:0}}).sort({createdAt:-1}).toArray())}catch(e){res.status(500).json({error:e.message})}});
+router.post("/",async(req,res)=>{try{if(!req.body?.partyName||!Array.isArray(req.body?.items)||!req.body.items.length)return res.status(400).json({error:"Customer and items are required"});const x={id:uuid(),userId:req.userId,name:String(req.body.name||("Recurring - "+req.body.partyName)),partyName:String(req.body.partyName),partyPhone:String(req.body.partyPhone||""),partyAddress:String(req.body.partyAddress||""),frequency:req.body.frequency==="yearly"?"yearly":req.body.frequency==="weekly"?"weekly":"monthly",nextDate:String(req.body.nextDate||new Date().toISOString().slice(0,10)),dueDays:Number(req.body.dueDays||0),items:req.body.items,discountAmt:Number(req.body.discountAmt||0),notes:String(req.body.notes||""),active:req.body.active!==false,createdAt:new Date().toISOString()};await (await col()).insertOne(x);const {_id,...clean}=x;res.status(201).json(clean)}catch(e){res.status(500).json({error:e.message})}});
+router.put("/:id",async(req,res)=>{try{const update={...req.body};delete update._id;delete update.userId;delete update.id;const r=await (await col()).findOneAndUpdate({id:req.params.id,userId:req.userId},{$set:update},{returnDocument:"after",projection:{_id:0}});if(!r)return res.status(404).json({error:"Recurring invoice not found"});res.json(r)}catch(e){res.status(500).json({error:e.message})}});
+router.delete("/:id",async(req,res)=>{try{const r=await (await col()).deleteOne({id:req.params.id,userId:req.userId});if(!r.deletedCount)return res.status(404).json({error:"Recurring invoice not found"});res.status(204).end()}catch(e){res.status(500).json({error:e.message})}});
+export default router;
