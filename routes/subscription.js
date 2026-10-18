@@ -49,8 +49,19 @@ router.get("/status", async (req, res) => {
       return res.json({ plan: "advanced", planName: "Owner Full Access", status: "active", mode: "owner", expiresAt: null, unlimited: true, freeLimits: FREE_LIMITS });
     }
     const current = currentSubscription(doc);
-    const daysRemaining = current.expiresAt ? Math.ceil((new Date(current.expiresAt).getTime() - Date.now()) / 86400000) : null;
-    res.json({ ...current, mode: access.mode, trialEndsAt: access.trialEndsAt, daysRemaining, unlimited: access.mode === "paid" || access.mode === "trial", freeLimits: FREE_LIMITS });
+    const now = Date.now();
+    const daysRemaining = current.expiresAt ? Math.ceil((new Date(current.expiresAt).getTime() - now) / 86400000) : null;
+    const trialDaysRemaining = access.trialEndsAt ? Math.max(0, Math.ceil((new Date(access.trialEndsAt).getTime() - now) / 86400000)) : null;
+    res.json({
+      ...current,
+      mode: access.mode,
+      trialEndsAt: access.trialEndsAt,
+      trialDaysRemaining,
+      trialExpired: access.mode === "free" && Boolean(access.trialEndsAt) && new Date(access.trialEndsAt).getTime() <= now,
+      daysRemaining,
+      unlimited: access.mode === "paid" || access.mode === "trial",
+      freeLimits: FREE_LIMITS,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Could not load subscription status" });
