@@ -75,7 +75,7 @@ async function activateCashfreeOrder(orderId, paymentAmount) {
     return { ok: false, reason: "payment_mismatch" };
   }
   const claim = await cashfreeOrders.updateOne(
-    { orderId, status: { $in: ["pending", "processing"] } },
+    { orderId, status: "pending" },
     { $set: { status: "processing", updatedAt: new Date().toISOString() } }
   );
   if (!claim.matchedCount) {
