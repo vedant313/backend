@@ -5,10 +5,9 @@ import { getDb } from "../db.js";
 const router = Router();
 
 const UPI_ID = "nexsatechnologies@okaxis";
+// Paid plans are temporarily disabled. Only the free plan is available.
 const PLANS = {
   free: { id: "free", name: "Free", price: 0, durationDays: null },
-  pro: { id: "pro", name: "Pro", price: 199, durationDays: 30 },
-  advanced: { id: "advanced", name: "Advanced", price: 399, durationDays: 30 },
 };
 
 function getPlan(planId) {
