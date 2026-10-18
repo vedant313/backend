@@ -184,7 +184,7 @@ router.post("/cashfree/create-order", async (req, res) => {
         order_currency: "INR",
         customer_details: customerDetails,
         order_note: "Nexsa Bills " + plan.name + " subscription",
-        order_meta: { return_url: frontendUrl + "/?cashfree=return&order_id={order_id}" },
+        order_meta: { return_url: frontendUrl + "/?cashfree=return&order_id={order_id}", notify_url: "https://backend1-tx8q.onrender.com/api/subscription/cashfree/webhook" },
       }),
     });
     const { cashfreeOrders } = await getCollections();
