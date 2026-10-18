@@ -1,7 +1,8 @@
-import { getDocumentsCollection, getPaymentsCollection, getUsersCollection, getDb } from "../db.js";
+import { getUsersCollection, getDb } from "../db.js";
 
 export const TRIAL_DAYS = 14;
-export const FREE_LIMITS = { invoices: 5, estimates: 3, payments: 5 };
+// Free plan is temporarily unlimited while paid plans are disabled.
+export const FREE_LIMITS = { invoices: null, estimates: null, payments: null };
 
 export async function getAccessState(userId) {
   const users = await getUsersCollection();
@@ -22,27 +23,11 @@ export async function getAccessState(userId) {
   return { mode: trialEndsAt.getTime() > now.getTime() ? "trial" : "free", plan: "free", trialEndsAt: trialEndsAt.toISOString(), expiresAt: null };
 }
 
+// Paid plans are disabled for now, so authenticated users can create documents without a quota.
 export async function enforceDocumentLimit(req, res, next) {
-  try {
-    const access = await getAccessState(req.userId);
-    if (access.mode === "trial" || access.mode === "paid") return next();
-    const type = req.body?.type === "estimate" ? "estimate" : "invoice";
-    const key = type === "estimate" ? "estimates" : "invoices";
-    const limit = FREE_LIMITS[key];
-    const col = await getDocumentsCollection();
-    const count = await col.countDocuments({ userId: req.userId, type });
-    if (count >= limit) return res.status(402).json({ error: "Free plan limit reached: " + limit + " " + key + ". Upgrade to Pro or Advanced to continue.", code: "FREE_LIMIT_REACHED", limit, type });
-    next();
-  } catch (err) { console.error(err); res.status(500).json({ error: "Could not check subscription limits" }); }
+  return next();
 }
 
 export async function enforcePaymentLimit(req, res, next) {
-  try {
-    const access = await getAccessState(req.userId);
-    if (access.mode === "trial" || access.mode === "paid") return next();
-    const col = await getPaymentsCollection();
-    const count = await col.countDocuments({ userId: req.userId });
-    if (count >= FREE_LIMITS.payments) return res.status(402).json({ error: "Free plan limit reached: " + FREE_LIMITS.payments + " payment entries. Upgrade to Pro or Advanced to continue.", code: "FREE_LIMIT_REACHED", limit: FREE_LIMITS.payments, type: "payments" });
-    next();
-  } catch (err) { console.error(err); res.status(500).json({ error: "Could not check subscription limits" }); }
+  return next();
 }
