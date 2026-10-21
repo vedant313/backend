@@ -111,9 +111,11 @@ router.post("/verify", async (req, res) => {
       headers: { authkey: authKey, accept: "application/json" },
       signal: AbortSignal.timeout(10000),
     });
-    const result = await providerJson(response);
+    const result = await response.json().catch(() => ({}));
+    const providerType = String(result.type || "").toLowerCase();
     const message = String(result.message || "").toLowerCase();
-    if (!(String(result.type || "").toLowerCase() === "success" || message.includes("verified") || message.includes("success"))) {
+    if (!response.ok || providerType === "error" ||
+        !(providerType === "success" || message.includes("verified") || message.includes("success"))) {
       return res.status(401).json({ error: "Invalid or expired OTP. Request a new code and try again." });
     }
 
