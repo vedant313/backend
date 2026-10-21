@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/auth.js";
 import phoneAuthRoutes from "./routes/phoneAuth.js";
+import firebasePhoneAuthRoutes from "./routes/firebasePhoneAuth.js";
 import businessRoutes from "./routes/business.js";
 import documentsRoutes from "./routes/documents.js";
 import paymentsRoutes from "./routes/payments.js";
@@ -24,15 +25,11 @@ app.use(express.json({
   },
 }));
 
-// Cashfree calls this public endpoint directly. Signature verification happens before processing.
 app.post("/api/subscription/cashfree/webhook", handleCashfreeWebhook);
-
-// Existing email/password auth remains enabled.
 app.use("/api/auth", authRoutes);
 app.use("/api/auth/phone-otp", phoneAuthRoutes);
+app.use("/api/auth", firebasePhoneAuthRoutes);
 
-// Everything below requires a signed-in user; each user only ever sees
-// their own business profile, invoices/estimates and payments.
 app.use("/api/business", requireAuth, businessRoutes);
 app.use("/api/documents", requireAuth, documentsRoutes);
 app.use("/api/payments", requireAuth, paymentsRoutes);
@@ -43,7 +40,4 @@ app.use("/api/expenses", requireAuth, expenseRoutes);
 app.use("/api/recurring", requireAuth, recurringRoutes);
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
-
-app.listen(PORT, () => {
-  console.log(`Billbook backend running on http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`Billbook backend running on http://localhost:${PORT}`));
