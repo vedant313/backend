@@ -45,5 +45,5 @@ app.use("/api/recurring", requireAuth, recurringRoutes);
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
 app.listen(PORT, () => {
-  console.log(\`Billbook backend running on http://localhost:\${PORT}\`);
+  console.log(`Billbook backend running on http://localhost:${PORT}`);
 });
