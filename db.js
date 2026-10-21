@@ -14,8 +14,6 @@ const DEFAULT_BUSINESS = {
   ifsc: "",
   terms: "Thank you for your business.",
   logoDataUrl: "",
-  // Theme: either a preset name (see frontend/src/utils/themes.js) or a custom
-  // set of colors the user picked in the theme builder.
   theme: { preset: "ocean", custom: null },
 };
 
@@ -25,9 +23,7 @@ let dbPromise;
 function getMongoUri() {
   const uri = process.env.MONGODB_URI;
   if (!uri) {
-    throw new Error(
-      "MONGODB_URI environment variable is not set. Add it in your hosting provider's environment variables (see README)."
-    );
+    throw new Error("MONGODB_URI environment variable is not set. Add it in your hosting provider's environment variables (see README).");
   }
   return uri;
 }
@@ -37,8 +33,6 @@ async function connect() {
     client = new MongoClient(getMongoUri());
     await client.connect();
   }
-  // MongoDB Atlas connection strings usually don't include a database name,
-  // so we just use a fixed database name for this app.
   return client.db("billbook");
 }
 
@@ -47,26 +41,21 @@ export function getDb() {
   return dbPromise;
 }
 
-// ---- Users (auth) ----
 export async function getUsersCollection() {
   const db = await getDb();
   const col = db.collection("users");
   await col.createIndex({ email: 1 }, { unique: true }).catch(() => {});
+  await col.createIndex({ phone: 1 }, { unique: true, sparse: true }).catch((err) => {
+    console.error("Could not create unique phone index; check duplicate phone values.", err.code || "index_error");
+  });
   return col;
 }
 
-// Every user gets their own business profile, invoices/estimates and
-// payments, scoped by userId, so multiple people can sign up and use the
-// same deployment without seeing each other's data.
-
-// Ensures a business profile document exists for this user and returns the collection.
 export async function getBusinessCollection(userId) {
   const db = await getDb();
   const col = db.collection("business");
   const existing = await col.findOne({ userId });
-  if (!existing) {
-    await col.insertOne({ userId, ...DEFAULT_BUSINESS });
-  }
+  if (!existing) await col.insertOne({ userId, ...DEFAULT_BUSINESS });
   return col;
 }
 
