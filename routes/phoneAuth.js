@@ -13,7 +13,7 @@ function normalizePhone(value) {
   const digits = String(value || "").replace(/[\s()-]/g, "").replace(/^\+/, "");
   const national = digits.startsWith("91") && digits.length === 12 ? digits.slice(2) : digits;
   if (!/^\d{10}$/.test(national)) return null;
-  return { stored: \`+91\${national}\`, provider: \`91\${national}\` };
+  return { stored: `+91${national}`, provider: `91${national}` };
 }
 const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
 const validEmail = (value) => /^\S+@\S+\.\S+$/.test(value);
