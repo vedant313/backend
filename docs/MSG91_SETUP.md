@@ -9,7 +9,7 @@ Never commit real credentials. Rotate any authkey that was exposed in a reposito
 
 ## MSG91 dashboard
 1. Sign in to MSG91 and open the OTP product.
-2. Create an OTP template using the provider OTP placeholder (usually \`##OTP##\`) and copy its template ID.
+2. Create an OTP template using the provider OTP placeholder (usually `##OTP##`) and copy its template ID.
 3. For India delivery, complete applicable DLT entity, sender/header and template mapping requirements.
 4. Add the two environment variables to the backend service and redeploy.
 5. Test send, invalid OTP, expiry, cooldown, and successful login with your own phone. Check MSG91 OTP logs if delivery fails.
