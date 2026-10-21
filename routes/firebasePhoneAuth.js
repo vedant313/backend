@@ -22,7 +22,7 @@ router.post("/firebase-phone", async (req, res) => {
     const idToken = String(req.body?.idToken || "");
     if (!idToken || idToken.length > 10000) return res.status(400).json({ error: "Missing Firebase sign-in token." });
 
-    const decoded = await firebaseAuth().verifyIdToken(idToken, true);
+    const decoded = await firebaseAuth().verifyIdToken(idToken);
     const phone = String(decoded.phone_number || "");
     if (!/^\+91\d{10}$/.test(phone)) return res.status(401).json({ error: "Firebase token does not contain a verified Indian phone number." });
 
