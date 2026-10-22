@@ -25,7 +25,7 @@ export async function requireAuth(req, res, next) {
     if (!user) return res.status(401).json({ error: "Account not found. Please sign in again." });
     if (user.status === "suspended") return res.status(403).json({ error: "This account is suspended. Contact Nexsa Bills support." });
     req.userId = user.id;
-    req.user = { id: user.id, email: user.email, name: user.name };
+    req.user = { id: user.id, email: user.email, name: user.name, phone: user.phone, phoneVerifiedAt: user.phoneVerifiedAt };
     next();
   } catch (err) {
     if (err?.name === "JsonWebTokenError" || err?.name === "TokenExpiredError") {
