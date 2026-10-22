@@ -61,7 +61,7 @@ router.post("/firebase-phone/link", requireAuth, async (req, res) => {
 router.post("/firebase-phone/password-login", async (req, res) => {
   try {
     const raw = String(req.body?.phone || "").trim().replace(/[\\s()-]/g, "");
-    const phone = /^\\+91\\d{10}$/.test(raw) ? raw : /^91\\d{10}$/.test(raw) ? `+${raw}` : /^\\d{10}$/.test(raw) ? `+91${raw}` : "";
+    const phone = /^\+91\d{10}$/.test(raw) ? raw : /^91\d{10}$/.test(raw) ? `+${raw}` : /^\d{10}$/.test(raw) ? `+91${raw}` : "";
     const password = String(req.body?.password || "");
     if (!phone || !password) return res.status(400).json({ error: "Enter a valid mobile number and password." });
     const col = await getUsersCollection();
