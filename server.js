@@ -12,6 +12,7 @@ import customerRoutes from "./routes/customers.js";
 import expenseRoutes from "./routes/expenses.js";
 import recurringRoutes from "./routes/recurring.js";
 import adminRoutes from "./routes/admin.js";
+import companiesRoutes from "./routes/companies.js";
 import { requireAuth } from "./middleware/auth.js";
 
 const app = express();
@@ -29,6 +30,7 @@ app.post("/api/subscription/cashfree/webhook", handleCashfreeWebhook);
 app.use("/api/auth", authRoutes);
 app.use("/api/auth", firebasePhoneAuthRoutes);
 app.use("/api/admin", requireAuth, adminRoutes);
+app.use("/api/companies", requireAuth, companiesRoutes);
 
 app.use("/api/business", requireAuth, businessRoutes);
 app.use("/api/documents", requireAuth, documentsRoutes);
