@@ -7,7 +7,7 @@ import { signToken, requireAuth } from "../middleware/auth.js";
 const router = Router();
 
 function publicUser(u) {
-  return { id: u.id, name: u.name, email: u.email };
+  return { id: u.id, name: u.name, email: u.email, phone: u.phone || "", phoneVerifiedAt: u.phoneVerifiedAt || null };
 }
 
 // POST /api/auth/signup
@@ -68,7 +68,7 @@ router.post("/login", async (req, res) => {
 
 // GET /api/auth/me — returns the signed-in user for a stored token.
 router.get("/me", requireAuth, async (req, res) => {
-  res.json({ user: { id: req.user.id, email: req.user.email, name: req.user.name } });
+  res.json({ user: { id: req.user.id, email: req.user.email, name: req.user.name, phone: req.user.phone || "", phoneVerifiedAt: req.user.phoneVerifiedAt || null } });
 });
 
 export default router;
