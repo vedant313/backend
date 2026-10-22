@@ -3,13 +3,14 @@ import { getDb, getUsersCollection } from "../db.js";
 
 const router = Router();
 const ADMIN_EMAIL = "nexsatechnologies@gmail.com";
+const ADMIN_PHONE = "+919370017895";
 
 function requireAdmin(req, res, next) {
   const allowed = String(process.env.ADMIN_EMAILS || ADMIN_EMAIL)
     .split(",").map((email) => email.trim().toLowerCase()).filter(Boolean);
-  if (!allowed.includes(String(req.user?.email || "").trim().toLowerCase())) {
-    return res.status(403).json({ error: "Admin access required." });
-  }
+  const emailAllowed = allowed.includes(String(req.user?.email || "").trim().toLowerCase());
+  const phoneAllowed = String(req.user?.phone || "") === ADMIN_PHONE && Boolean(req.user?.phoneVerifiedAt);
+  if (!emailAllowed && !phoneAllowed) return res.status(403).json({ error: "Admin access required." });
   next();
 }
 
@@ -84,7 +85,7 @@ router.patch("/users/:id/status", async (req, res) => {
     const users = await getUsersCollection();
     const target = await users.findOne({ id: req.params.id });
     if (!target) return res.status(404).json({ error: "User not found." });
-    if (String(target.email || "").toLowerCase() === ADMIN_EMAIL) return res.status(400).json({ error: "Cannot suspend the primary admin account." });
+    if ((String(target.email || "").toLowerCase() === ADMIN_EMAIL || String(target.phone || "") === ADMIN_PHONE)) return res.status(400).json({ error: "Cannot suspend the primary admin account." });
     await users.updateOne({ id: req.params.id }, { $set: { status, updatedAt: new Date().toISOString() } });
     const db = await getDb();
     await db.collection("adminAuditLog").insertOne({
