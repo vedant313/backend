@@ -2,6 +2,7 @@ import { Router } from "express";
 import { cert, initializeApp, getApps } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { v4 as uuid } from "uuid";
+import bcrypt from "bcryptjs";
 import { getUsersCollection } from "../db.js";
 import { signToken, requireAuth } from "../middleware/auth.js";
 
@@ -63,21 +64,47 @@ router.post("/firebase-phone", async (req, res) => {
 
     const decoded = await firebaseAuth().verifyIdToken(idToken);
     const phone = String(decoded.phone_number || "");
-    if (!/^\+91\d{10}$/.test(phone)) return res.status(401).json({ error: "Firebase token does not contain a verified Indian phone number." });
+    if (!/^\\+91\\d{10}$/.test(phone)) return res.status(401).json({ error: "Firebase token does not contain a verified Indian phone number." });
 
     const col = await getUsersCollection();
     let user = await col.findOne({ phone });
-    if (!user) {
-      const name = String(req.body?.name || "").trim();
-      if (!name) return res.status(400).json({ error: "Enter your name to create a new account." });
-      // Keep the existing users.email schema intact without requiring an email for phone-only accounts.
-      // This internal placeholder is not a real email address and is never used for login.
-      const email = `phone+${phone.replace(/\\D/g, "")}@users.nexsa.invalid`;
-      user = { id: uuid(), name, email, phone, authProvider: "firebase-phone", phoneVerifiedAt: new Date().toISOString(), createdAt: new Date().toISOString(), trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() };
+    const name = String(req.body?.name || "").trim();
+    const email = normalizeEmail(req.body?.email);
+    const password = String(req.body?.password || "");
+    const hasSignupDetails = Boolean(name && validEmail(email) && password.length >= 6);
+
+    if (user) {
+      // Existing phone-linked account signs in normally. A legacy phone-only account
+      // can be completed with email/password without creating a second account.
+      if (String(user.email || "").endsWith("@users.nexsa.invalid") && hasSignupDetails) {
+        const emailOwner = await col.findOne({ email, id: { $ne: user.id } });
+        if (emailOwner) return res.status(409).json({ error: "That email already belongs to another account. Sign in to that account and link this phone from Settings." });
+        const passwordHash = await bcrypt.hash(password, 10);
+        await col.updateOne({ id: user.id }, { $set: { name, email, passwordHash, authProvider: "phone-and-password", updatedAt: new Date().toISOString() } });
+        user = { ...user, name, email, passwordHash, authProvider: "phone-and-password" };
+      } else if (String(user.email || "").endsWith("@users.nexsa.invalid")) {
+        return res.json({ requiresSignup: true, message: "Verify your phone, then set your name, email and password to finish account setup." });
+      } else if (!user.phoneVerifiedAt) {
+        user.phoneVerifiedAt = new Date().toISOString();
+        await col.updateOne({ id: user.id }, { $set: { phoneVerifiedAt: user.phoneVerifiedAt } });
+      }
+    } else {
+      if (!name || !email || !password) {
+        return res.json({ requiresSignup: true, message: "Phone verified. Enter your name, email and password to complete sign-up." });
+      }
+      if (!validEmail(email)) return res.status(400).json({ error: "Enter a valid email address." });
+      if (password.length < 6) return res.status(400).json({ error: "Password must be at least 6 characters." });
+      const emailOwner = await col.findOne({ email });
+      if (emailOwner) return res.status(409).json({ error: "This email already has an account. Sign in with email and password, then link this phone from Settings. Your data has not been changed." });
+      const passwordHash = await bcrypt.hash(password, 10);
+      user = {
+        id: uuid(), name, email, passwordHash, phone,
+        authProvider: "phone-and-password",
+        phoneVerifiedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+      };
       await col.insertOne(user);
-    } else if (!user.phoneVerifiedAt) {
-      user.phoneVerifiedAt = new Date().toISOString();
-      await col.updateOne({ _id: user._id }, { $set: { phoneVerifiedAt: user.phoneVerifiedAt } });
     }
 
     return res.json({ token: signToken(user), user: { id: user.id, name: user.name, email: user.email, phone: user.phone } });
