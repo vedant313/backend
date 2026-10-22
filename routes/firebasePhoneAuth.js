@@ -57,6 +57,49 @@ router.post("/firebase-phone/link", requireAuth, async (req, res) => {
   }
 });
 
+// Phone + password login for accounts that have a verified phone and password.
+router.post("/firebase-phone/password-login", async (req, res) => {
+  try {
+    const raw = String(req.body?.phone || "").trim().replace(/[\\s()-]/g, "");
+    const phone = /^\\+91\\d{10}$/.test(raw) ? raw : /^91\\d{10}$/.test(raw) ? `+${raw}` : /^\\d{10}$/.test(raw) ? `+91${raw}` : "";
+    const password = String(req.body?.password || "");
+    if (!phone || !password) return res.status(400).json({ error: "Enter a valid mobile number and password." });
+    const col = await getUsersCollection();
+    const user = await col.findOne({ phone });
+    if (!user || !user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
+      return res.status(401).json({ error: "Incorrect phone number or password. If you forgot it, reset using phone OTP." });
+    }
+    return res.json({ token: signToken(user), user: { id: user.id, name: user.name, email: user.email, phone: user.phone } });
+  } catch (err) {
+    console.error("Phone password login failed:", err.name || "login_error");
+    return res.status(500).json({ error: "Phone login is temporarily unavailable." });
+  }
+});
+
+// Reset password only after Firebase has verified an OTP for this exact phone.
+router.post("/firebase-phone/reset-password", async (req, res) => {
+  try {
+    const idToken = String(req.body?.idToken || "");
+    const password = String(req.body?.password || "");
+    if (!idToken || idToken.length > 10000) return res.status(400).json({ error: "Verify your phone with OTP first." });
+    if (password.length < 6) return res.status(400).json({ error: "Password must be at least 6 characters." });
+    const decoded = await firebaseAuth().verifyIdToken(idToken);
+    const phone = String(decoded.phone_number || "");
+    if (!/^\\+91\\d{10}$/.test(phone)) return res.status(401).json({ error: "Verified phone number is invalid." });
+    const col = await getUsersCollection();
+    const user = await col.findOne({ phone });
+    if (!user) return res.status(404).json({ error: "No account is linked to this phone number. Sign up first." });
+    const passwordHash = await bcrypt.hash(password, 10);
+    await col.updateOne({ id: user.id }, { $set: { passwordHash, passwordUpdatedAt: new Date().toISOString() } });
+    return res.json({ ok: true, message: "Password reset successfully. You can now log in with your phone or email and new password." });
+  } catch (err) {
+    if (err.code === "FIREBASE_ADMIN_CREDENTIALS_MISSING") return res.status(503).json({ error: "Phone verification backend is not configured." });
+    if (String(err.code || "").startsWith("auth/")) return res.status(401).json({ error: "OTP verification expired. Please request a new OTP." });
+    console.error("Phone password reset failed:", err.name || "reset_error");
+    return res.status(500).json({ error: "Could not reset password right now." });
+  }
+});
+
 router.post("/firebase-phone", async (req, res) => {
   try {
     const idToken = String(req.body?.idToken || "");
