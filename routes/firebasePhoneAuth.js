@@ -85,7 +85,7 @@ router.post("/firebase-phone/reset-password", async (req, res) => {
     if (password.length < 6) return res.status(400).json({ error: "Password must be at least 6 characters." });
     const decoded = await firebaseAuth().verifyIdToken(idToken);
     const phone = String(decoded.phone_number || "");
-    if (!/^\\+91\\d{10}$/.test(phone)) return res.status(401).json({ error: "Verified phone number is invalid." });
+    if (!/^\+91\d{10}$/.test(phone)) return res.status(401).json({ error: "Verified phone number is invalid." });
     const col = await getUsersCollection();
     const user = await col.findOne({ phone });
     if (!user) return res.status(404).json({ error: "No account is linked to this phone number. Sign up first." });
@@ -107,7 +107,7 @@ router.post("/firebase-phone", async (req, res) => {
 
     const decoded = await firebaseAuth().verifyIdToken(idToken);
     const phone = String(decoded.phone_number || "");
-    if (!/^\\+91\\d{10}$/.test(phone)) return res.status(401).json({ error: "Firebase token does not contain a verified Indian phone number." });
+    if (!/^\+91\d{10}$/.test(phone)) return res.status(401).json({ error: "Firebase token does not contain a verified Indian phone number." });
 
     const col = await getUsersCollection();
     let user = await col.findOne({ phone });
