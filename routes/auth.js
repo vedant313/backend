@@ -50,8 +50,8 @@ router.post("/login", async (req, res) => {
     if (!loginId || !password) return res.status(400).json({ error: "Enter your email or mobile number and password." });
 
     const col = await getUsersCollection();
-    const normalizedPhone = loginId.replace(/[\\s()-]/g, "");
-    const phone = /^\\+91\\d{10}$/.test(normalizedPhone) ? normalizedPhone : /^91\\d{10}$/.test(normalizedPhone) ? `+${normalizedPhone}` : /^\\d{10}$/.test(normalizedPhone) ? `+91${normalizedPhone}` : null;
+    const normalizedPhone = loginId.replace(/[\s()-]/g, "");
+    const phone = /^\+91\d{10}$/.test(normalizedPhone) ? normalizedPhone : /^91\d{10}$/.test(normalizedPhone) ? `+${normalizedPhone}` : /^\d{10}$/.test(normalizedPhone) ? `+91${normalizedPhone}` : null;
     const user = phone ? await col.findOne({ phone }) : await col.findOne({ email: loginId.toLowerCase() });
     if (!user) return res.status(401).json({ error: "Incorrect email or password." });
 
