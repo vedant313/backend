@@ -78,6 +78,51 @@ router.get("/users", async (req, res) => {
   }
 });
 
+// Permanently delete a customer's account and Nexsa Bills data. Requires typing the exact email.
+router.delete("/users/:id", async (req, res) => {
+  try {
+    const confirmEmail = String(req.body?.confirmEmail || "").trim().toLowerCase();
+    const users = await getUsersCollection();
+    const target = await users.findOne({ id: req.params.id });
+    if (!target) return res.status(404).json({ error: "User not found." });
+    if (
+      String(target.email || "").trim().toLowerCase() === ADMIN_EMAIL ||
+      String(target.phone || "") === ADMIN_PHONE
+    ) {
+      return res.status(400).json({ error: "The primary admin account cannot be deleted from this panel." });
+    }
+    if (!confirmEmail || confirmEmail !== String(target.email || "").trim().toLowerCase()) {
+      return res.status(400).json({ error: "Type the customer's exact email to confirm deletion." });
+    }
+
+    const db = await getDb();
+    const userId = target.id;
+    const ownedCollections = [
+      "business", "documents", "payments", "customers", "expenses",
+      "products", "stockMovements", "recurringInvoices", "subscriptions",
+      "subscriptionPayments", "cashfreeOrders"
+    ];
+    const deletedCounts = {};
+    for (const name of ownedCollections) {
+      const result = await db.collection(name).deleteMany({ userId });
+      deletedCounts[name] = result.deletedCount || 0;
+    }
+    await users.deleteOne({ id: userId });
+    await db.collection("adminAuditLog").insertOne({
+      actorEmail: String(req.user?.email || "").toLowerCase(),
+      action: "user.delete",
+      targetUserId: userId,
+      targetEmail: target.email || "",
+      deletedCounts,
+      createdAt: new Date().toISOString(),
+    });
+    return res.json({ ok: true, deletedUser: target.email || "", deletedCounts });
+  } catch (error) {
+    console.error("Admin delete user error:", error);
+    return res.status(500).json({ error: "Could not delete customer account and data." });
+  }
+});
+
 router.patch("/users/:id/status", async (req, res) => {
   try {
     const status = req.body?.status;
