@@ -36,7 +36,7 @@ router.post("/firebase-phone/link", requireAuth, async (req, res) => {
 
     const decoded = await firebaseAuth().verifyIdToken(idToken);
     const phone = String(decoded.phone_number || "");
-    if (!/^\\+91\\d{10}$/.test(phone)) return res.status(401).json({ error: "Firebase token does not contain a verified Indian phone number." });
+    if (!/^\+91\d{10}$/.test(phone)) return res.status(401).json({ error: "Firebase token does not contain a verified Indian phone number." });
 
     const col = await getUsersCollection();
     const existingPhone = await col.findOne({ phone, id: { $ne: req.user.id } });
