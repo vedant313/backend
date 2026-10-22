@@ -69,10 +69,10 @@ router.post("/firebase-phone", async (req, res) => {
     let user = await col.findOne({ phone });
     if (!user) {
       const name = String(req.body?.name || "").trim();
-      const email = normalizeEmail(req.body?.email);
-      if (!name) return res.status(400).json({ error: "For a new account, enter your name." });
-      if (!validEmail(email)) return res.status(400).json({ error: "For a new account, enter a valid email address." });
-      if (await col.findOne({ email })) return res.status(409).json({ error: "This email already has an account. Sign in with email and password; existing data has not been changed." });
+      if (!name) return res.status(400).json({ error: "Enter your name to create a new account." });
+      // Keep the existing users.email schema intact without requiring an email for phone-only accounts.
+      // This internal placeholder is not a real email address and is never used for login.
+      const email = `phone+${phone.replace(/\\D/g, "")}@users.nexsa.invalid`;
       user = { id: uuid(), name, email, phone, authProvider: "firebase-phone", phoneVerifiedAt: new Date().toISOString(), createdAt: new Date().toISOString(), trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() };
       await col.insertOne(user);
     } else if (!user.phoneVerifiedAt) {
