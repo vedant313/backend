@@ -100,9 +100,9 @@ router.post("/render", upload.single("pdf"), async (req, res) => {
       const left = Math.max(0, Math.min(size.width, Number(x) / 1000 * size.width));
       const top = Math.max(0, Math.min(size.height, Number(y) / 1000 * size.height));
       const boxWidth = Math.max(1, Math.min(size.width - left, Number(width) / 1000 * size.width));
-      const boxHeight = Math.max(1, Math.min(top, Number(height) / 1000 * size.height));
+      const boxHeight = Math.max(1, Math.min(size.height - top, Number(height) / 1000 * size.height));
       if (boxWidth < 2 || boxHeight < 2) continue;
-      const bottom = size.height - top;
+      const bottom = size.height - top - boxHeight;
       page.drawRectangle({ x: left, y: bottom, width: boxWidth, height: boxHeight, color: rgb(1, 1, 1), opacity: 1 });
       const value = String(values[field.key] ?? "").replace(/[\r\n\t]+/g, " ").slice(0, 300);
       if (value) {
