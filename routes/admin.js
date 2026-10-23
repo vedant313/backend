@@ -175,6 +175,93 @@ router.patch("/users/:id/subscription", async (req, res) => {
   }
 });
 
+// Admin-only pilot storage for custom invoice templates. Templates are scoped to the signed-in admin.
+router.get("/custom-invoice-studio/templates", async (req, res) => {
+  try {
+    const db = await getDb();
+    const record = await db.collection("customInvoiceStudioTemplates").findOne(
+      { userId: req.userId },
+      { projection: { _id: 0, userId: 0 } }
+    );
+    res.json({ templates: Array.isArray(record?.templates) ? record.templates : [] });
+  } catch (error) {
+    console.error("Custom invoice templates read error:", error);
+    res.status(500).json({ error: "Could not load custom invoice templates." });
+  }
+});
+
+router.put("/custom-invoice-studio/templates", async (req, res) => {
+  try {
+    const template = req.body?.template;
+    if (!template || typeof template !== "object" || Array.isArray(template)) {
+      return res.status(400).json({ error: "A template object is required." });
+    }
+    const id = String(template.id || "").trim();
+    const name = String(template.name || "").trim().slice(0, 80);
+    if (!id || id.length > 100 || !name) {
+      return res.status(400).json({ error: "Template ID and name are required." });
+    }
+    if (!Array.isArray(template.elements) || template.elements.length > 150) {
+      return res.status(400).json({ error: "Template must contain no more than 150 layout elements." });
+    }
+    const safeTemplate = {
+      id, name,
+      enabledFields: Array.isArray(template.enabledFields) ? template.enabledFields.slice(0, 80).map((x) => String(x).slice(0, 80)) : [],
+      elements: template.elements.map((element) => ({
+        id: String(element?.id || "").slice(0, 100),
+        label: String(element?.label || "").slice(0, 500),
+        x: Math.max(0, Math.min(100, Number(element?.x) || 0)),
+        y: Math.max(0, Math.min(100, Number(element?.y) || 0)),
+        w: Math.max(1, Math.min(100, Number(element?.w) || 1)),
+        h: Math.max(1, Math.min(100, Number(element?.h) || 1)),
+        size: Math.max(7, Math.min(32, Number(element?.size) || 10)),
+        bold: Boolean(element?.bold),
+        referenceText: Boolean(element?.referenceText),
+      })),
+      accent: /^#[0-9a-f]{6}$/i.test(String(template.accent || "")) ? template.accent : "#202020",
+      font: ["Arial", "Georgia", "Verdana", "Tahoma"].includes(template.font) ? template.font : "Arial",
+      sourceFileName: String(template.sourceFileName || "").slice(0, 180),
+      updatedAt: new Date().toISOString(),
+    };
+    const db = await getDb();
+    const collection = db.collection("customInvoiceStudioTemplates");
+    const record = await collection.findOne({ userId: req.userId });
+    const templates = Array.isArray(record?.templates) ? record.templates : [];
+    const index = templates.findIndex((item) => item.id === id);
+    if (index >= 0) templates[index] = safeTemplate;
+    else templates.push(safeTemplate);
+    if (templates.length > 40) return res.status(400).json({ error: "Maximum 40 saved templates in this pilot." });
+    await collection.updateOne(
+      { userId: req.userId },
+      { $set: { templates, updatedAt: new Date().toISOString() } },
+      { upsert: true }
+    );
+    res.json({ templates });
+  } catch (error) {
+    console.error("Custom invoice template save error:", error);
+    res.status(500).json({ error: "Could not save custom invoice template." });
+  }
+});
+
+router.delete("/custom-invoice-studio/templates/:id", async (req, res) => {
+  try {
+    const db = await getDb();
+    const collection = db.collection("customInvoiceStudioTemplates");
+    const record = await collection.findOne({ userId: req.userId });
+    const templates = (Array.isArray(record?.templates) ? record.templates : [])
+      .filter((template) => template.id !== req.params.id);
+    await collection.updateOne(
+      { userId: req.userId },
+      { $set: { templates, updatedAt: new Date().toISOString() } },
+      { upsert: true }
+    );
+    res.json({ templates });
+  } catch (error) {
+    console.error("Custom invoice template delete error:", error);
+    res.status(500).json({ error: "Could not delete custom invoice template." });
+  }
+});
+
 router.get("/audit", async (req, res) => {
   try {
     const db = await getDb();
