@@ -16,6 +16,8 @@
     "firebase-admin": "^13.4.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.9.0",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "multer": "^2.0.2",
+    "pdf-lib": "^1.17.1"
   }
 }
