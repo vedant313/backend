@@ -85,6 +85,24 @@ router.post("/render", upload.single("pdf"), async (req, res) => {
       fields = JSON.parse(String(req.body?.fields || "[]"));
     } catch { return res.status(400).json({ error: "Quotation values or field positions are invalid." }); }
     if (!values || typeof values !== "object" || Array.isArray(values) || Object.keys(values).length > 150 || !Array.isArray(fields)) return res.status(400).json({ error: "Invalid quotation fields." });
+    if (process.env.PDF_OCR_SERVICE_URL) {
+      const form = new FormData();
+      form.append("pdf", new Blob([req.file.buffer], { type: "application/pdf" }), req.file.originalname || "quotation.pdf");
+      form.append("values", JSON.stringify(values));
+      form.append("fields", JSON.stringify(fields));
+      const serviceUrl = process.env.PDF_OCR_SERVICE_URL.replace(/\\/$/, "");
+      const serviceResponse = await fetch(serviceUrl + "/render", { method: "POST", body: form, signal: AbortSignal.timeout(120000) });
+      if (!serviceResponse.ok) {
+        const message = await serviceResponse.text().catch(() => "");
+        return res.status(serviceResponse.status === 422 ? 422 : 502).json({ error: message.slice(0, 400) || "OCR reconstruction service failed." });
+      }
+      const rendered = Buffer.from(await serviceResponse.arrayBuffer());
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", 'attachment; filename="nexsa-ocr-reconstructed.pdf"');
+      res.setHeader("Content-Length", rendered.length);
+      res.setHeader("X-PDF-Mode", "ocr-reconstruction");
+      return res.send(rendered);
+    }
     const pdf = await PDFDocument.load(req.file.buffer);
     const font = await pdf.embedFont(StandardFonts.Helvetica);
     const pages = pdf.getPages();
