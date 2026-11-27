@@ -8,7 +8,7 @@ const UPI_ID = "nexsatechnologies@okaxis";
 const PLANS = {
   free: { id: "free", name: "Free", price: 0, durationDays: null, features: ["5 invoices", "3 estimates", "5 payment entries"] },
   pro: { id: "pro", name: "Pro", price: 199, durationDays: 30, features: ["Unlimited invoices", "Unlimited estimates", "Unlimited payment entries"] },
-  advanced: { id: "advanced", name: "Advanced", price: 399, durationDays: 30, features: ["Unlimited everything", "All document designs", "Priority support"] },
+  advanced: { id: "advanced", name: "Advanced", price: 399, durationDays: 30, features: ["Unlimited everything", "All document designs", "Priority support", "Nexsa Website Studio", "12 business website templates", "Custom business subdomain"] },
 };
 const OWNER_EMAIL = "vedantb150@gmail.com";
 
