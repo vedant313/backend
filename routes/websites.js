@@ -53,6 +53,23 @@ function cleanSections(sections) {
     items: cleanItems(s.items),
   }));
 }
+function defaultSections(templateId, businessName, tagline, description) {
+  const sets = {
+    "retail-store": ["hero","products","gallery","about","contact"],
+    "fashion-boutique": ["hero","gallery","products","about","contact"],
+    "electronics-hub": ["hero","products","services","about","contact"],
+    "solar-energy": ["hero","services","about","testimonials","contact","map"],
+    "professional-services": ["hero","services","about","testimonials","contact"],
+    "restaurant-cafe": ["hero","gallery","services","map","contact"],
+    "health-wellness": ["hero","services","about","testimonials","contact"],
+    "real-estate": ["hero","gallery","services","about","contact","map"],
+    "creative-studio": ["hero","gallery","services","about","contact"],
+    "corporate-pro": ["hero","about","services","testimonials","contact"],
+    "local-business": ["hero","about","services","map","contact"],
+  };
+  const types = sets[templateId] || ["hero","about","services","products","contact"];
+  return types.map(type => ({ type, enabled: true, title: ({hero:businessName,about:"About us",services:"Our services",products:"Our products",gallery:"Our work",testimonials:"What customers say",contact:"Get in touch",map:"Find us"})[type], body: type === "hero" ? tagline : type === "about" ? description : type === "contact" ? "We would love to hear from you." : "", items: [] }));
+}
 function cleanWebsiteInput(input, existing = {}) {
   const template = WEBSITE_TEMPLATES.find(t => t.id === input?.templateId) || WEBSITE_TEMPLATES.find(t => t.id === existing.templateId) || WEBSITE_TEMPLATES[0];
   const businessName = text(input?.businessName ?? existing.businessName, 100);
@@ -67,6 +84,8 @@ function cleanWebsiteInput(input, existing = {}) {
     whatsapp: text(input?.whatsapp ?? existing.whatsapp, 30).replace(/[^0-9+]/g, ""),
     email: text(input?.email ?? existing.email, 160),
     address: text(input?.address ?? existing.address, 400),
+    seoTitle: text(input?.seoTitle ?? existing.seoTitle ?? businessName, 70),
+    seoDescription: text(input?.seoDescription ?? existing.seoDescription ?? input?.description ?? existing.description, 180),
     logoUrl: safeImage(input?.logoUrl ?? existing.logoUrl),
     heroImageUrl: safeImage(input?.heroImageUrl ?? existing.heroImageUrl),
     primaryColor: safeColor(input?.primaryColor ?? existing.primaryColor, template.primaryColor),
