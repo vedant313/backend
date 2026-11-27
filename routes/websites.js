@@ -90,12 +90,7 @@ function cleanWebsiteInput(input, existing = {}) {
     heroImageUrl: safeImage(input?.heroImageUrl ?? existing.heroImageUrl),
     primaryColor: safeColor(input?.primaryColor ?? existing.primaryColor, template.primaryColor),
     accentColor: safeColor(input?.accentColor ?? existing.accentColor, template.accentColor),
-    sections: cleanSections(input?.sections ?? existing.sections ?? [
-      { type:"hero", enabled:true, title:businessName, body:text(input?.tagline ?? existing.tagline,180) },
-      { type:"about", enabled:true, title:"About us", body:text(input?.description ?? existing.description,1200) },
-      { type:"services", enabled:true, title:"Our services", items:[] },
-      { type:"contact", enabled:true, title:"Get in touch", body:"We would love to hear from you." },
-    ]),
+    sections: cleanSections(input?.sections ?? existing.sections ?? defaultSections(template.id, businessName, text(input?.tagline ?? existing.tagline,180), text(input?.description ?? existing.description,1200))),
   };
 }
 async function getWebsites() {
